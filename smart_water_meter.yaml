@@ -1,0 +1,57 @@
+esphome:
+  name: smart_water_meter
+  platform: ESP32
+  board: ttgo-t1
+  includes:
+    - PulseCounter.h
+
+wifi:
+  ssid: "<wifi-ssid>"
+  password: "<wifi-pwd>"
+  fast_connect: true
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "<ap-name>"
+    password: "<ap-pwd>"
+
+# Enable/disable deep sleep via MQTT to allow OTA update
+mqtt:
+  broker: <broker-ip>
+  port: <broker-port>
+  username: <broker-username>
+  password: <broker-pwd>
+  birth_message:
+  will_message:
+  on_message:
+    - topic: homeassistant/smart_water_meter/ota_mode
+      payload: 'ON'
+      then:
+        - deep_sleep.prevent: watermetersleep_1
+    - topic: homeassistant/smart_water_meter/sleep_mode
+      payload: 'ON'
+      then:
+        - deep_sleep.enter: watermetersleep_1
+        
+# Enable logging
+logger:
+
+ota:
+  password: "<ota-pwd>"
+  
+sensor:
+  - platform: custom
+    lambda: |-
+      auto pulse_counter = new PulseCounter();
+      App.register_component(pulse_counter);
+      return {pulse_counter};
+
+    sensors:
+      name: "Pulse Counter"
+      unit_of_measurement: ltrs
+      accuracy_decimals: 2
+      
+deep_sleep:
+  id: watermetersleep_1
+  run_duration: 7s
+  sleep_duration: 3600s
